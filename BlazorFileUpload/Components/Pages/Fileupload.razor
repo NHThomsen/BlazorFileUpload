@@ -1,0 +1,78 @@
+﻿@page "/fileupload"
+@rendermode InteractiveServer
+@inject IWebHostEnvironment Environment
+
+<h3>Fileupload</h3>
+<p>
+    <label>
+        <InputFile OnChange="LoadFiles" />
+    </label>
+</p>
+<p>
+    <label>
+        @errorMessage
+    </label>
+</p>
+
+
+@code {
+    private IBrowserFile? file;
+    private string errorMessage = "";
+    private int maxFilesize = 15000 * 1024;
+    private string dbFileName = "";
+
+    private async Task LoadFiles(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            // Makes the event argument into it's own variable
+            file = e.File;
+
+            // Need to split by the dot, to get the file type.
+            string[] fileArray = file.Name.Split(".");
+
+            /*
+            * Get the file type by reading after the final dot
+            * It is possible to have dots in the file name. Therefor it has to be the final dot
+            */
+            string fileType = fileArray[fileArray.Count() - 1];
+
+            // Makes a unix timestap for a unique filename
+            DateTime currentTime = DateTime.Now;
+            long unixTime = ((DateTimeOffset)currentTime).ToUnixTimeSeconds();
+
+            /*
+            * Because we seperate on dots, we also need to combine the new filename by dots
+            * All file name parts gets a dot added, except for the final one 
+            */
+            string combinedFile = "";
+            for(int i = 0; i < fileArray.Count() - 1;i++)
+            {
+                combinedFile += fileArray[i];
+                if(i != fileArray.Count() - 2)
+                {
+                    combinedFile += ".";
+                }
+            }
+
+            /*
+            * Combining all the parts to make the proper file name
+            * The original file name, adding a unix timestamp and the file type at the end 
+            */
+            string combinedFileName = combinedFile + "_" + unixTime.ToString() + "." + fileType;
+
+            // The combined path to where the file is uploaded
+            var path = Path.Combine(Environment.WebRootPath,"Uploads",combinedFileName);
+
+            // Copies the file
+            await using FileStream fs = new(path, FileMode.Create);
+            await file.OpenReadStream(maxFilesize).CopyToAsync(fs);
+
+            dbFileName = combinedFileName;
+        }
+        catch(Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+}

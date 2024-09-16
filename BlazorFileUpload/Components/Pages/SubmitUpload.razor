@@ -1,0 +1,23 @@
+﻿@page "/submitupload"
+<h3>SubmitUpload</h3>
+
+<form method="post" @onsubmit="Submit" @formname="name-form">
+    <AntiforgeryToken />
+    <label>
+        <InputFile @bind-Value="fileToUpload" />
+    </label>
+    <label>
+        <button type="submit">Submit</button>
+    </label>
+</form>
+
+@code {
+    [SupplyParameterFromForm]
+    private string? Name { get; set; }
+    private IFormFile fileToUpload { get; set; }
+
+    private void Submit()
+    {
+        System.Diagnostics.Debug.WriteLine(fileToUpload.Name);
+    }
+}
